@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#be185d">
+<title>הוראות התקנה – מעקב הריון</title>
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: #fdf2f8;
+    color: #1e1b4b;
+    direction: rtl;
+    padding: env(safe-area-inset-top,16px) 16px 32px;
+    min-height: 100dvh;
+  }
+  .hero {
+    text-align: center;
+    padding: 32px 16px 24px;
+    background: linear-gradient(135deg, #be185d, #6d28d9);
+    border-radius: 24px;
+    color: white;
+    margin-bottom: 24px;
+  }
+  .hero .icon { font-size: 64px; }
+  .hero h1 { font-size: 26px; font-weight: 800; margin-top: 12px; }
+  .hero p  { font-size: 15px; opacity: 0.85; margin-top: 6px; }
+
+  .tab-row { display: flex; gap: 8px; margin-bottom: 20px; }
+  .tab-btn {
+    flex: 1; padding: 12px 8px; border-radius: 14px;
+    border: 2px solid #f9a8d4; background: white;
+    font-family: 'Heebo', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; transition: all 0.2s; color: #be185d;
+  }
+  .tab-btn.active { background: #be185d; color: white; border-color: #be185d; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .step-card {
+    background: white; border-radius: 16px;
+    padding: 16px; margin-bottom: 12px;
+    display: flex; gap: 14px; align-items: flex-start;
+    box-shadow: 0 2px 12px rgba(244,114,182,0.1);
+  }
+  .step-num {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: linear-gradient(135deg, #be185d, #6d28d9);
+    color: white; font-weight: 800; font-size: 16px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .step-body h3 { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
+  .step-body p  { font-size: 13px; color: #6b7280; line-height: 1.5; }
+  .step-body .icon-hint {
+    display: inline-block; background: #fce7f3;
+    border-radius: 8px; padding: 3px 10px;
+    font-size: 13px; font-weight: 600; color: #be185d;
+    margin-top: 5px;
+  }
+
+  .note-box {
+    background: #ede9fe; border-radius: 14px; padding: 14px 16px;
+    font-size: 13px; line-height: 1.6; color: #4c1d95;
+    border-right: 4px solid #7c3aed; margin-top: 16px;
+  }
+  .note-box strong { font-weight: 700; }
+
+  .open-btn {
+    display: block; width: 100%;
+    padding: 18px; border-radius: 18px; border: none;
+    background: linear-gradient(135deg, #be185d, #6d28d9);
+    color: white; font-family: 'Heebo', sans-serif;
+    font-size: 18px; font-weight: 800; cursor: pointer;
+    margin-top: 24px; text-align: center; text-decoration: none;
+    box-shadow: 0 4px 20px rgba(190,24,93,0.35);
+  }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="icon">🤰</div>
+  <h1>מעקב הריון</h1>
+  <p>הוראות התקנה על הטלפון שלך</p>
+</div>
+
+<div class="tab-row">
+  <button class="tab-btn active" onclick="showTab('ios')">🍎 iPhone</button>
+  <button class="tab-btn" onclick="showTab('android')">🤖 Android</button>
+</div>
+
+<!-- iOS -->
+<div id="tab-ios" class="tab-content active">
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>פתחי ב-Safari</h3>
+      <p>ודאי שאת פותחת את הקישור דווקא בדפדפן Safari (לא Chrome או Firefox)</p>
+      <span class="icon-hint">🧭 Safari בלבד</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>לחצי על כפתור השיתוף</h3>
+      <p>בתחתית המסך (או בחלק העליון על iPad) תמצאי את כפתור השיתוף</p>
+      <span class="icon-hint">⬆️ כפתור שיתוף</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>בחרי "הוסף למסך הבית"</h3>
+      <p>גללי למטה ברשימת האפשרויות עד שתמצאי "הוסף למסך הבית" (Add to Home Screen)</p>
+      <span class="icon-hint">➕ הוסף למסך הבית</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>לחצי "הוסף"</h3>
+      <p>תוכלי לשנות את שם האפליקציה, ואז לחצי "הוסף" בפינה הימנית עליונה</p>
+    </div>
+  </div>
+  <div class="note-box">
+    <strong>💡 טיפ:</strong> האפליקציה תופיע על המסך הבית בדיוק כמו אפליקציה רגילה — עם אייקון, ללא שורת כתובת, ועם תמיכה מלאה בנוטש ו-Dynamic Island.
+  </div>
+</div>
+
+<!-- Android -->
+<div id="tab-android" class="tab-content">
+  <div class="step-card">
+    <div class="step-num">1</div>
+    <div class="step-body">
+      <h3>פתחי ב-Chrome</h3>
+      <p>ודאי שאת פותחת את הקישור בדפדפן Google Chrome</p>
+      <span class="icon-hint">🌐 Chrome מומלץ</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">2</div>
+    <div class="step-body">
+      <h3>לחצי על תפריט שלוש הנקודות</h3>
+      <p>בפינה הימנית העליונה תמצאי את תפריט ⋮ (שלוש נקודות)</p>
+      <span class="icon-hint">⋮ תפריט</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">3</div>
+    <div class="step-body">
+      <h3>בחרי "הוסף למסך הבית"</h3>
+      <p>בחרי "Add to Home screen" / "הוסף למסך הבית" מתוך התפריט</p>
+      <span class="icon-hint">➕ הוסף למסך הבית</span>
+    </div>
+  </div>
+  <div class="step-card">
+    <div class="step-num">4</div>
+    <div class="step-body">
+      <h3>לחצי "התקן"</h3>
+      <p>אפשר לשנות שם, ואז ללחוץ "התקן" — האפליקציה תיפתח במסך מלא</p>
+    </div>
+  </div>
+  <div class="note-box">
+    <strong>💡 טיפ:</strong> ב-Android החדש יופיע באנר אוטומטי בתחתית המסך שמציע להתקין — אפשר פשוט ללחוץ עליו!
+  </div>
+</div>
+
+<a href="index.html" class="open-btn">🚀 פתחי את האפליקציה</a>
+
+<script>
+function showTab(tab) {
+  document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + tab).classList.add('active');
+  event.target.classList.add('active');
+}
+</script>
+</body>
+</html>

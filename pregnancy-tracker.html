@@ -1,0 +1,1704 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<!-- Viewport: viewport-fit=cover for iPhone notch/Dynamic Island -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+
+<!-- PWA / Install -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#be185d">
+<meta name="mobile-web-app-capable" content="yes">
+
+<!-- iOS PWA -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="מעקב הריון">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="apple-touch-icon" sizes="152x152" href="icons/icon-152.png">
+<link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+
+<!-- iOS Splash Screens (key sizes) -->
+<meta name="apple-touch-startup-image" content="icons/icon-512.png">
+
+<!-- Android / General -->
+<meta name="application-name" content="מעקב הריון">
+<meta name="msapplication-TileColor" content="#be185d">
+<meta name="msapplication-TileImage" content="icons/icon-144.png">
+
+<!-- SEO / Share -->
+<meta name="description" content="אפליקציית מעקב הריון עם AI - בדיקות, תזונה, תיעוד מסמכים ויועצת מקצועית">
+<meta property="og:title" content="מעקב הריון">
+<meta property="og:description" content="מעקב הריון חכם עם יועצת AI">
+<meta property="og:image" content="icons/icon-512.png">
+
+<title>מעקב הריון</title>
+<link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --rose: #f472b6;
+    --rose-light: #fce7f3;
+    --rose-pale: #fdf2f8;
+    --rose-dark: #be185d;
+    --peach: #fb923c;
+    --teal: #14b8a6;
+    --teal-light: #ccfbf1;
+    --lavender: #a78bfa;
+    --lavender-light: #ede9fe;
+    --gold: #f59e0b;
+    --gold-light: #fef3c7;
+    --text: #1e1b4b;
+    --text-muted: #6b7280;
+    --surface: #ffffff;
+    --bg: #fdf2f8;
+    --border: #f9a8d4;
+    --shadow: 0 4px 24px rgba(244,114,182,0.12);
+    --radius: 20px;
+    --radius-sm: 12px;
+    /* Safe area insets - iOS notch / Dynamic Island / Android punch-hole */
+    --sat: env(safe-area-inset-top, 0px);
+    --sar: env(safe-area-inset-right, 0px);
+    --sab: env(safe-area-inset-bottom, 0px);
+    --sal: env(safe-area-inset-left, 0px);
+    /* Nav height = 56px + safe-area-bottom */
+    --nav-h: calc(56px + var(--sab));
+    /* Header includes status bar top */
+    --header-extra: var(--sat);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html {
+    height: 100%;
+    /* Remove any browser default margin/gap on iOS standalone */
+    margin: 0; padding: 0;
+  }
+  body {
+    font-family: 'Heebo', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100%;
+    min-height: 100dvh;
+    direction: rtl;
+    overscroll-behavior: none;
+    -webkit-font-smoothing: antialiased;
+    margin: 0; padding: 0;
+  }
+
+  /* SPLASH */
+  #splash {
+    position: fixed; inset: 0; z-index: 999;
+    background: linear-gradient(145deg, #fdf2f8 0%, #fce7f3 50%, #ede9fe 100%);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 16px; transition: opacity 0.5s;
+    padding-top: var(--sat);
+  }
+  #splash .logo { font-size: 64px; animation: pulse 2s infinite; }
+  #splash h1 { font-size: 28px; font-weight: 800; color: var(--rose-dark); }
+  #splash p { color: var(--text-muted); font-size: 15px; }
+  @keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.08)} }
+
+  /* SCREENS */
+  .screen { display: none; min-height: 100dvh; padding-bottom: var(--nav-h); }
+  .screen.active { display: block; }
+
+  /* HEADER - tight against status bar */
+  .app-header {
+    background: white;
+    padding-top: calc(12px + env(safe-area-inset-top, 0px));
+    padding-bottom: 12px;
+    padding-right: 20px;
+    padding-left: 20px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 12px rgba(244,114,182,0.1);
+    display: flex; align-items: center; justify-content: space-between;
+    /* Ensure no gap between status bar and header on iOS standalone */
+    margin-top: 0;
+  }
+  .app-header h2 { font-size: 20px; font-weight: 700; color: var(--rose-dark); }
+  .app-header .week-badge {
+    background: linear-gradient(135deg, var(--rose), var(--lavender));
+    color: white; padding: 6px 14px; border-radius: 20px;
+    font-size: 13px; font-weight: 700;
+  }
+
+  /* NAV - sits above home indicator on iPhone / Android gesture bar */
+  .bottom-nav {
+    position: fixed; bottom: 0; left: var(--sal); right: var(--sar); z-index: 200;
+    background: white;
+    display: flex; justify-content: space-around; align-items: flex-start;
+    padding-top: 8px;
+    padding-bottom: max(var(--sab), 8px);
+    padding-left: var(--sal);
+    padding-right: var(--sar);
+    box-shadow: 0 -2px 16px rgba(244,114,182,0.15);
+    height: var(--nav-h);
+  }
+  .nav-btn {
+    display: flex; flex-direction: column; align-items: center; gap: 2px;
+    border: none; background: none; cursor: pointer; padding: 6px 12px;
+    border-radius: 12px; transition: all 0.2s; color: #aaa;
+    font-family: 'Heebo', sans-serif;
+  }
+  .nav-btn.active { color: var(--rose-dark); background: var(--rose-light); }
+  .nav-btn span { font-size: 11px; font-weight: 600; }
+  .nav-icon { font-size: 22px; line-height: 1; }
+
+  /* HERO WEEK CARD */
+  .week-hero {
+    margin: 16px; border-radius: var(--radius);
+    background: linear-gradient(135deg, var(--rose-dark) 0%, #9d174d 50%, #6d28d9 100%);
+    padding: 28px 24px; color: white; position: relative; overflow: hidden;
+  }
+  .week-hero::before {
+    content: ''; position: absolute;
+    width: 200px; height: 200px; border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    top: -60px; left: -60px;
+  }
+  .week-hero::after {
+    content: ''; position: absolute;
+    width: 150px; height: 150px; border-radius: 50%;
+    background: rgba(255,255,255,0.05);
+    bottom: -40px; right: -40px;
+  }
+  .week-hero-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .week-num { font-size: 72px; font-weight: 800; line-height: 1; }
+  .week-label { font-size: 14px; opacity: 0.8; margin-top: 4px; }
+  .trimester-badge {
+    background: rgba(255,255,255,0.2); backdrop-filter: blur(8px);
+    border: 1px solid rgba(255,255,255,0.3);
+    padding: 6px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
+  }
+  .week-desc { font-size: 15px; opacity: 0.9; margin-top: 12px; line-height: 1.6; }
+  .progress-bar-wrap { margin-top: 16px; }
+  .progress-bar-track {
+    background: rgba(255,255,255,0.2); border-radius: 10px; height: 8px; overflow: hidden;
+    direction: ltr; /* force LTR so fill grows left→right visually = right→left in RTL layout */
+  }
+  .progress-bar-fill {
+    height: 100%; border-radius: 10px;
+    background: linear-gradient(90deg, #fce7f3, #f472b6);
+    transition: width 0.5s ease;
+  }
+  .progress-labels { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11px; opacity: 0.7; }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(3,1fr); gap: 10px; margin: 0 16px 16px; }
+  .stat-card {
+    background: white; border-radius: var(--radius-sm); padding: 14px 10px; text-align: center;
+    box-shadow: var(--shadow);
+  }
+  .stat-card .stat-icon { font-size: 24px; }
+  .stat-card .stat-val { font-size: 18px; font-weight: 800; color: var(--rose-dark); margin-top: 4px; }
+  .stat-card .stat-label { font-size: 11px; color: var(--text-muted); font-weight: 500; }
+
+  /* SECTION TITLE */
+  .section-title {
+    font-size: 17px; font-weight: 700; color: var(--text);
+    margin: 20px 16px 10px; display: flex; align-items: center; gap: 8px;
+  }
+  .section-title::after {
+    content: ''; flex: 1; height: 2px;
+    background: linear-gradient(90deg, var(--rose-light), transparent);
+    border-radius: 2px;
+  }
+
+  /* TASK / CHECK CARDS */
+  .cards-list { margin: 0 16px; display: flex; flex-direction: column; gap: 10px; }
+  .check-card {
+    background: white; border-radius: var(--radius-sm); padding: 14px 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06); display: flex; align-items: flex-start; gap: 12px;
+    cursor: pointer; transition: transform 0.15s;
+    border-right: 4px solid transparent;
+  }
+  .check-card:active { transform: scale(0.98); }
+  .check-card.done { opacity: 0.6; border-right-color: var(--teal); }
+  .check-card.urgent { border-right-color: var(--rose); }
+  .check-card .card-icon { font-size: 26px; flex-shrink: 0; margin-top: 2px; }
+  .check-card .card-body { flex: 1; }
+  .check-card .card-title { font-size: 15px; font-weight: 600; }
+  .check-card .card-sub { font-size: 13px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+  .check-card .card-week { font-size: 11px; font-weight: 700; color: var(--rose-dark); margin-top: 4px; }
+  .check-card .check-circle {
+    width: 24px; height: 24px; border-radius: 50%; border: 2px solid #ddd;
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+    transition: all 0.2s;
+  }
+  .check-card.done .check-circle { background: var(--teal); border-color: var(--teal); color: white; font-size: 14px; }
+
+  /* FOOD CARDS */
+  .food-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 0 16px; }
+  .food-card {
+    background: white; border-radius: var(--radius-sm); padding: 14px 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+  }
+  .food-card .food-emoji { font-size: 28px; }
+  .food-card .food-title { font-size: 14px; font-weight: 700; margin-top: 6px; }
+  .food-card .food-desc { font-size: 12px; color: var(--text-muted); margin-top: 3px; line-height: 1.4; }
+  .food-card.avoid { border-top: 3px solid #fca5a5; }
+  .food-card.eat { border-top: 3px solid var(--teal); }
+
+  /* AI CHAT */
+  #screen-ai { display: none; flex-direction: column; min-height: 100dvh; padding-bottom: 0; }
+  #screen-ai.active { display: flex; }
+  .chat-messages {
+    flex: 1; overflow-y: auto; padding: 16px;
+    display: flex; flex-direction: column; gap: 12px;
+    padding-bottom: 20px;
+    overscroll-behavior: contain;
+  }
+  .msg { max-width: 85%; }
+  .msg.user { align-self: flex-start; }
+  .msg.ai { align-self: flex-end; }
+  .msg-bubble {
+    padding: 12px 16px; border-radius: 18px; font-size: 14px; line-height: 1.6;
+  }
+  .msg.user .msg-bubble {
+    background: white; border-bottom-right-radius: 4px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  }
+  .msg.ai .msg-bubble {
+    background: linear-gradient(135deg, var(--rose-dark), #6d28d9);
+    color: white; border-bottom-left-radius: 4px;
+  }
+  .msg-meta { font-size: 11px; color: var(--text-muted); margin-top: 3px; padding: 0 4px; }
+  .msg.ai .msg-meta { text-align: left; }
+  .chat-input-bar {
+    background: white; padding: 12px 16px; display: flex; gap: 10px; align-items: flex-end;
+    border-top: 1px solid #f3f4f6;
+    padding-bottom: calc(var(--nav-h) + 8px);
+    flex-shrink: 0;
+  }
+  .chat-input {
+    flex: 1; border: 1.5px solid var(--border); border-radius: 20px;
+    padding: 10px 16px; font-family: 'Heebo', sans-serif; font-size: 14px;
+    resize: none; outline: none; max-height: 120px; direction: rtl;
+    background: var(--rose-pale); color: var(--text);
+  }
+  .chat-input:focus { border-color: var(--rose); }
+  .send-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: none; cursor: pointer;
+    background: linear-gradient(135deg, var(--rose-dark), #6d28d9);
+    color: white; font-size: 18px; display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0; transition: transform 0.15s;
+  }
+  .send-btn:active { transform: scale(0.92); }
+  .typing-indicator { display: flex; gap: 4px; padding: 4px 0; }
+  .typing-dot {
+    width: 8px; height: 8px; border-radius: 50%; background: rgba(255,255,255,0.6);
+    animation: typingDot 1.2s infinite;
+  }
+  .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes typingDot { 0%,60%,100%{opacity:0.3;transform:translateY(0)} 30%{opacity:1;transform:translateY(-4px)} }
+
+  /* QUICK QUESTIONS */
+  .quick-questions { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 16px; }
+  .quick-q {
+    background: white; border: 1.5px solid var(--border); border-radius: 20px;
+    padding: 7px 14px; font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all 0.15s; color: var(--rose-dark);
+  }
+  .quick-q:hover { background: var(--rose-light); }
+
+  /* ONBOARDING / PROFILE SCREEN */
+  #screen-profile { background: var(--bg); }
+  .profile-form { margin: 16px; }
+  .form-card {
+    background: white; border-radius: var(--radius); padding: 20px;
+    box-shadow: var(--shadow); margin-bottom: 14px;
+  }
+  .form-card h3 { font-size: 16px; font-weight: 700; margin-bottom: 14px; display: flex; align-items: center; gap: 8px; }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-size: 13px; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+  .field input, .field select {
+    width: 100%; padding: 12px 14px; border: 1.5px solid #e5e7eb; border-radius: 12px;
+    font-family: 'Heebo', sans-serif; font-size: 15px; outline: none;
+    background: var(--rose-pale); color: var(--text); direction: rtl;
+    transition: border-color 0.2s;
+  }
+  .field input:focus, .field select:focus { border-color: var(--rose); }
+  .save-btn {
+    width: 100%; padding: 16px; border: none; border-radius: 16px; cursor: pointer;
+    background: linear-gradient(135deg, var(--rose-dark), #6d28d9);
+    color: white; font-family: 'Heebo', sans-serif; font-size: 17px; font-weight: 700;
+    box-shadow: 0 4px 16px rgba(190,24,93,0.3); transition: transform 0.15s;
+  }
+  .save-btn:active { transform: scale(0.97); }
+
+  /* TIPS / ALERTS */
+  .tip-banner {
+    margin: 0 16px 12px; border-radius: var(--radius-sm); padding: 14px 16px;
+    display: flex; gap: 12px; align-items: flex-start;
+  }
+  .tip-banner.info { background: var(--lavender-light); border-right: 4px solid var(--lavender); }
+  .tip-banner.warn { background: var(--gold-light); border-right: 4px solid var(--gold); }
+  .tip-banner.danger { background: #fee2e2; border-right: 4px solid #f87171; }
+  .tip-banner .tip-icon { font-size: 22px; flex-shrink: 0; }
+  .tip-banner .tip-text { font-size: 13px; line-height: 1.5; }
+  .tip-banner .tip-title { font-weight: 700; font-size: 14px; margin-bottom: 2px; }
+
+  /* ACTIVITY CHIPS */
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 16px 16px; }
+  .chip {
+    background: white; border: 1.5px solid #e5e7eb; border-radius: 20px;
+    padding: 8px 14px; font-size: 13px; font-weight: 500; display: flex; gap: 6px; align-items: center;
+    cursor: pointer; transition: all 0.2s;
+  }
+  .chip.active { background: var(--teal-light); border-color: var(--teal); color: #0f766e; }
+  .chip .chip-icon { font-size: 16px; }
+
+  /* SCROLLBAR */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  /* LOADING SPINNER */
+  .spinner {
+    width: 20px; height: 20px; border: 2px solid rgba(255,255,255,0.3);
+    border-top-color: white; border-radius: 50%; animation: spin 0.6s linear infinite;
+    display: inline-block;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* TIMELINE */
+  .timeline { margin: 0 16px; }
+  .timeline-item { display: flex; gap: 12px; margin-bottom: 0; }
+  .timeline-left { display: flex; flex-direction: column; align-items: center; }
+  .timeline-dot {
+    width: 16px; height: 16px; border-radius: 50%; background: var(--rose);
+    border: 3px solid white; box-shadow: 0 0 0 2px var(--rose);
+    flex-shrink: 0; margin-top: 4px; z-index: 1;
+  }
+  .timeline-dot.past { background: var(--teal); box-shadow: 0 0 0 2px var(--teal); }
+  .timeline-dot.future { background: #e5e7eb; box-shadow: 0 0 0 2px #e5e7eb; }
+  .timeline-line { width: 2px; background: #f3f4f6; flex: 1; margin: 2px 0; }
+  .timeline-content {
+    flex: 1; background: white; border-radius: var(--radius-sm); padding: 12px 14px;
+    margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+  }
+  .timeline-week { font-size: 11px; font-weight: 700; color: var(--rose-dark); }
+  .timeline-title { font-size: 14px; font-weight: 600; margin-top: 2px; }
+  .timeline-desc { font-size: 12px; color: var(--text-muted); margin-top: 2px; line-height: 1.4; }
+
+  /* MODAL */
+  .modal-overlay {
+    display: none; position: fixed; inset: 0; z-index: 500;
+    background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal-sheet {
+    background: white; border-radius: 28px 28px 0 0; width: 100%; max-height: 85vh;
+    overflow-y: auto; padding: 20px 20px; padding-bottom: max(24px, var(--sab));
+    animation: slideUp 0.3s ease;
+  }
+  @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+  .modal-handle { width: 40px; height: 4px; background: #e5e7eb; border-radius: 2px; margin: 0 auto 20px; }
+  .modal-sheet h3 { font-size: 20px; font-weight: 800; margin-bottom: 12px; }
+  .modal-sheet p { font-size: 14px; line-height: 1.7; color: #374151; }
+  .modal-sheet ul { padding-right: 16px; margin-top: 8px; }
+  .modal-sheet li { font-size: 14px; line-height: 1.8; color: #374151; }
+  .close-modal {
+    position: absolute; top: 16px; left: 16px; width: 32px; height: 32px;
+    border-radius: 50%; border: none; background: #f3f4f6;
+    cursor: pointer; font-size: 16px; display: flex; align-items: center; justify-content: center;
+  }
+  /* DOC CARDS */
+  .doc-card {
+    background: white; border-radius: var(--radius-sm);
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    overflow: hidden; cursor: pointer; transition: transform 0.15s;
+  }
+  .doc-card:active { transform: scale(0.98); }
+  .doc-card-header {
+    display: flex; align-items: flex-start; gap: 12px; padding: 14px 16px;
+  }
+  .doc-type-badge {
+    width: 44px; height: 44px; border-radius: 12px; display: flex; align-items: center;
+    justify-content: center; font-size: 22px; flex-shrink: 0;
+  }
+  .doc-card-body { flex: 1; }
+  .doc-card-title { font-size: 15px; font-weight: 700; }
+  .doc-card-date { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+  .doc-card-note { font-size: 12px; color: var(--text-muted); margin-top: 2px; font-style: italic; }
+  .doc-card-status {
+    font-size: 11px; font-weight: 700; padding: 3px 10px; border-radius: 10px;
+    display: inline-block; margin-top: 6px;
+  }
+  .doc-card-status.analyzed { background: var(--teal-light); color: #0f766e; }
+  .doc-card-status.pending { background: var(--gold-light); color: #92400e; }
+  .doc-preview {
+    border-top: 1px solid #f3f4f6; padding: 12px 16px;
+    font-size: 13px; color: #374151; line-height: 1.6;
+    background: var(--rose-pale);
+    display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden;
+  }
+  .doc-actions {
+    border-top: 1px solid #f3f4f6; display: flex; padding: 0;
+  }
+  .doc-action-btn {
+    flex: 1; padding: 10px; border: none; background: none; cursor: pointer;
+    font-family: 'Heebo', sans-serif; font-size: 13px; font-weight: 600;
+    color: var(--text-muted); transition: background 0.15s; display: flex;
+    align-items: center; justify-content: center; gap: 5px;
+  }
+  .doc-action-btn:hover { background: var(--rose-pale); }
+  .doc-action-btn.danger { color: #ef4444; }
+  .doc-action-btn + .doc-action-btn { border-right: 1px solid #f3f4f6; }
+
+  /* RESULT SECTIONS */
+  .result-section { margin-bottom: 16px; }
+  .result-section-title {
+    font-size: 13px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+    color: var(--text-muted); margin-bottom: 8px;
+  }
+  .result-value-row {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 10px 14px; background: var(--rose-pale); border-radius: 10px; margin-bottom: 6px;
+  }
+  .result-value-name { font-size: 14px; font-weight: 600; }
+  .result-value-num { font-size: 14px; font-weight: 700; }
+  .result-value-num.normal { color: var(--teal); }
+  .result-value-num.high { color: #ef4444; }
+  .result-value-num.low { color: var(--gold); }
+  .result-summary-box {
+    background: linear-gradient(135deg, var(--rose-light), var(--lavender-light));
+    border-radius: 14px; padding: 16px; margin-bottom: 14px;
+    border-right: 4px solid var(--rose-dark);
+  }
+  .result-summary-box .summary-title { font-size: 14px; font-weight: 700; margin-bottom: 6px; }
+  .result-summary-box .summary-text { font-size: 13px; line-height: 1.7; }
+  .ask-about-doc-btn {
+    width: 100%; padding: 14px; border: none; border-radius: 14px;
+    background: linear-gradient(135deg, var(--rose-dark), #6d28d9);
+    color: white; font-family: 'Heebo', sans-serif; font-size: 15px; font-weight: 700;
+    cursor: pointer; margin-top: 8px; display: flex; align-items: center; justify-content: center; gap: 8px;
+  }
+  .img-thumb { width: 100%; max-height: 180px; object-fit: cover; border-radius: 12px; margin-bottom: 14px; }
+</style>
+</head>
+<body>
+
+<!-- SPLASH -->
+<div id="splash">
+  <div class="logo">🤰</div>
+  <h1>מעקב הריון</h1>
+  <p>הדרך שלך להריון בריא ומאושר</p>
+</div>
+
+<!-- BOTTOM NAV -->
+<nav class="bottom-nav" id="bottomNav">
+  <button class="nav-btn active" onclick="showScreen('dashboard')" data-screen="dashboard">
+    <span class="nav-icon">🏠</span>
+    <span>ראשי</span>
+  </button>
+  <button class="nav-btn" onclick="showScreen('checks')" data-screen="checks">
+    <span class="nav-icon">🩺</span>
+    <span>בדיקות</span>
+  </button>
+  <button class="nav-btn" onclick="showScreen('nutrition')" data-screen="nutrition">
+    <span class="nav-icon">🥗</span>
+    <span>תזונה</span>
+  </button>
+  <button class="nav-btn" onclick="showScreen('ai')" data-screen="ai">
+    <span class="nav-icon">💬</span>
+    <span>יועצת AI</span>
+  </button>
+  <button class="nav-btn" onclick="showScreen('docs')" data-screen="docs">
+    <span class="nav-icon">📁</span>
+    <span>מסמכים</span>
+  </button>
+  <button class="nav-btn" onclick="showScreen('profile')" data-screen="profile">
+    <span class="nav-icon">👤</span>
+    <span>פרופיל</span>
+  </button>
+</nav>
+
+<!-- DASHBOARD -->
+<div id="screen-dashboard" class="screen active">
+  <div class="app-header">
+    <div>
+      <h2>שלום 🌸</h2>
+    </div>
+    <div class="week-badge" id="headerWeekBadge">שבוע 1</div>
+  </div>
+
+  <div id="weekHeroContainer"></div>
+
+  <div class="stats-row" id="statsRow">
+    <div class="stat-card">
+      <div class="stat-icon">📅</div>
+      <div class="stat-val" id="statDaysLeft">–</div>
+      <div class="stat-label">ימים לתאריך יעד</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">🫀</div>
+      <div class="stat-val" id="statTrimester">–</div>
+      <div class="stat-label">שליש הריון</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-icon">✅</div>
+      <div class="stat-val" id="statChecks">0/0</div>
+      <div class="stat-label">בדיקות בוצעו</div>
+    </div>
+  </div>
+
+  <div id="dashboardTip"></div>
+
+  <div class="section-title">📋 משימות השבוע</div>
+  <div class="cards-list" id="weeklyTasks"></div>
+
+  <div class="section-title">🏃‍♀️ פעילות מומלצת</div>
+  <div class="chips" id="activityChips"></div>
+
+  <div style="height:16px"></div>
+</div>
+
+<!-- CHECKS -->
+<div id="screen-checks" class="screen">
+  <div class="app-header">
+    <h2>🩺 בדיקות ומעקב</h2>
+    <div class="week-badge" id="headerWeekBadge2">שבוע 1</div>
+  </div>
+  <div style="padding:16px 16px 0; font-size:13px; color:var(--text-muted);">
+    לחצי על בדיקה כדי לסמן כבוצעה ולקרוא פרטים נוספים
+  </div>
+  <div class="section-title">📌 בדיקות לשבוע הנוכחי</div>
+  <div class="cards-list" id="checksCurrentWeek"></div>
+  <div class="section-title">🗓️ לוח זמנים מלא</div>
+  <div class="timeline" id="checksTimeline"></div>
+  <div style="height:16px"></div>
+</div>
+
+<!-- NUTRITION -->
+<div id="screen-nutrition" class="screen">
+  <div class="app-header">
+    <h2>🥗 תזונה בהריון</h2>
+  </div>
+
+  <div class="section-title" style="margin-top:16px">✅ מומלץ לאכול</div>
+  <div class="food-grid" id="foodEat"></div>
+
+  <div class="section-title">🚫 להימנע</div>
+  <div class="food-grid" id="foodAvoid"></div>
+
+  <div class="section-title">💊 תוספי תזונה</div>
+  <div class="cards-list" id="supplements"></div>
+
+  <div style="height:16px"></div>
+</div>
+
+<!-- AI CHAT -->
+<div id="screen-ai" class="screen">
+  <div class="app-header">
+    <h2>💬 יועצת AI</h2>
+    <div style="font-size:12px; color:var(--text-muted);">מבוסס Claude AI</div>
+  </div>
+  <div style="font-size:12px; color:var(--text-muted); padding:8px 16px; text-align:center; background:var(--rose-pale);">
+    ⚠️ האפליקציה אינה מחליפה ייעוץ רפואי מקצועי. כל שאלה רפואית חשובה – פני לרופאה/ת שלך.
+  </div>
+  <div style="padding:12px 16px 4px; font-size:13px; color:var(--text-muted); font-weight:600;">שאלות מהירות:</div>
+  <div class="quick-questions" id="quickQuestions"></div>
+  <div class="chat-messages" id="chatMessages"></div>
+  <div class="chat-input-bar">
+    <textarea class="chat-input" id="chatInput" placeholder="שאלי אותי כל שאלה על ההריון..." rows="1"
+      onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+    <button class="send-btn" onclick="sendMessage()" id="sendBtn">➤</button>
+  </div>
+</div>
+
+<!-- DOCS -->
+<div id="screen-docs" class="screen">
+  <div class="app-header">
+    <h2>📁 תיעוד בדיקות</h2>
+    <button onclick="openUploadModal()" style="background:linear-gradient(135deg,var(--rose-dark),#6d28d9);color:white;border:none;border-radius:20px;padding:7px 16px;font-family:Heebo,sans-serif;font-size:13px;font-weight:700;cursor:pointer;">+ הוסף</button>
+  </div>
+
+  <!-- Upload Zone -->
+  <div id="uploadZone" style="margin:16px;border:2px dashed var(--border);border-radius:var(--radius);padding:32px 20px;text-align:center;background:white;cursor:pointer;" onclick="openUploadModal()">
+    <div style="font-size:48px;margin-bottom:10px;">📤</div>
+    <div style="font-weight:700;font-size:16px;color:var(--rose-dark);">העלי בדיקה או מסמך</div>
+    <div style="font-size:13px;color:var(--text-muted);margin-top:6px;">תמונה, PDF, צילום מסמך – AI יפענח בשבילך</div>
+    <div style="margin-top:14px;display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+      <span style="background:var(--rose-light);color:var(--rose-dark);padding:5px 12px;border-radius:12px;font-size:12px;font-weight:600;">📷 צילום</span>
+      <span style="background:var(--teal-light);color:#0f766e;padding:5px 12px;border-radius:12px;font-size:12px;font-weight:600;">📄 PDF</span>
+      <span style="background:var(--lavender-light);color:#5b21b6;padding:5px 12px;border-radius:12px;font-size:12px;font-weight:600;">🖼️ תמונה</span>
+    </div>
+  </div>
+
+  <div class="section-title">📋 מסמכים שמורים</div>
+  <div id="docsList" style="margin:0 16px;display:flex;flex-direction:column;gap:12px;"></div>
+  <div style="height:16px"></div>
+</div>
+
+<!-- UPLOAD MODAL -->
+<div class="modal-overlay" id="uploadModalOverlay" onclick="closeUploadModal(event)">
+  <div class="modal-sheet" style="max-height:92vh;">
+    <div class="modal-handle"></div>
+    <div id="uploadModalContent">
+      <!-- step 1: choose -->
+      <div id="uploadStep1">
+        <h3>📤 הוסף מסמך חדש</h3>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:20px;">בחרי סוג מסמך ואז העלי קובץ או צלמי תמונה</p>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:8px;">סוג הבדיקה / המסמך</label>
+          <select id="docType" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-family:Heebo,sans-serif;font-size:15px;background:var(--rose-pale);direction:rtl;">
+            <option value="blood">🩸 בדיקת דם</option>
+            <option value="ultrasound">🔊 אולטרסאונד / סונאר</option>
+            <option value="glucose">🍬 העמסת סוכר (GTT)</option>
+            <option value="amnio">🧬 בדיקה גנטית / שקיפות</option>
+            <option value="urine">💧 בדיקת שתן</option>
+            <option value="bp">💊 מדידת לחץ דם</option>
+            <option value="prescription">💉 מרשם תרופות</option>
+            <option value="summary">📝 סיכום רופא</option>
+            <option value="other">📋 אחר</option>
+          </select>
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:8px;">תאריך הבדיקה</label>
+          <input type="date" id="docDate" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-family:Heebo,sans-serif;font-size:15px;background:var(--rose-pale);">
+        </div>
+
+        <div style="margin-bottom:16px;">
+          <label style="display:block;font-size:13px;font-weight:600;color:var(--text-muted);margin-bottom:8px;">הערה אישית (אופציונלי)</label>
+          <input type="text" id="docNote" placeholder="לדוגמה: נשלח לגינקולוג" style="width:100%;padding:12px 14px;border:1.5px solid #e5e7eb;border-radius:12px;font-family:Heebo,sans-serif;font-size:15px;background:var(--rose-pale);direction:rtl;">
+        </div>
+
+        <!-- File drop zone -->
+        <div id="fileDropZone"
+          style="border:2px dashed var(--border);border-radius:16px;padding:28px;text-align:center;cursor:pointer;transition:background 0.2s;position:relative;background:var(--rose-pale);"
+          onclick="document.getElementById('fileInput').click()"
+          ondragover="event.preventDefault();this.style.background='var(--rose-light)'"
+          ondragleave="this.style.background='var(--rose-pale)'"
+          ondrop="handleFileDrop(event)">
+          <input type="file" id="fileInput" accept="image/*,application/pdf" capture="environment" style="display:none" onchange="handleFileSelect(event)">
+          <div style="font-size:40px;margin-bottom:8px;">📎</div>
+          <div style="font-weight:700;color:var(--rose-dark);">לחצי להעלאה או גררי קובץ</div>
+          <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">תמונה (JPG/PNG) או PDF</div>
+        </div>
+
+        <!-- Camera button for mobile -->
+        <button onclick="document.getElementById('cameraInput').click()"
+          style="width:100%;margin-top:10px;padding:14px;border:1.5px solid var(--border);border-radius:14px;background:white;font-family:Heebo,sans-serif;font-size:15px;font-weight:600;cursor:pointer;color:var(--rose-dark);display:flex;align-items:center;justify-content:center;gap:8px;">
+          📷 צלמי עכשיו עם המצלמה
+        </button>
+        <input type="file" id="cameraInput" accept="image/*" capture="environment" style="display:none" onchange="handleFileSelect(event)">
+
+        <div id="filePreviewWrap" style="display:none;margin-top:14px;text-align:center;"></div>
+      </div>
+
+      <!-- Step 2: analyzing -->
+      <div id="uploadStep2" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:56px;margin-bottom:16px;animation:pulse 1.5s infinite;">🔬</div>
+        <div style="font-size:20px;font-weight:800;color:var(--rose-dark);">מנתח את המסמך...</div>
+        <div style="font-size:14px;color:var(--text-muted);margin-top:8px;">AI קורא ומפענח את הממצאים</div>
+        <div style="margin-top:20px;display:flex;justify-content:center;gap:6px;">
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--rose);animation:typingDot 1.2s infinite;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--rose);animation:typingDot 1.2s 0.2s infinite;"></div>
+          <div style="width:10px;height:10px;border-radius:50%;background:var(--rose);animation:typingDot 1.2s 0.4s infinite;"></div>
+        </div>
+      </div>
+
+      <!-- Analyze button -->
+      <div id="analyzeButtonWrap" style="display:none;margin-top:16px;">
+        <button id="analyzeBtn" onclick="analyzeDocument()"
+          style="width:100%;padding:16px;border:none;border-radius:16px;background:linear-gradient(135deg,var(--rose-dark),#6d28d9);color:white;font-family:Heebo,sans-serif;font-size:17px;font-weight:700;cursor:pointer;">
+          🔬 פענח עם AI
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DOC DETAIL MODAL -->
+<div class="modal-overlay" id="docDetailOverlay" onclick="closeDocDetail(event)">
+  <div class="modal-sheet" style="max-height:90vh;">
+    <div class="modal-handle"></div>
+    <button class="close-modal" onclick="closeDocDetail()">✕</button>
+    <div id="docDetailContent"></div>
+  </div>
+</div>
+
+<!-- PROFILE -->
+<div id="screen-profile" class="screen">
+  <div class="app-header"><h2>👤 הפרופיל שלי</h2></div>
+  <div class="profile-form">
+    <div class="form-card">
+      <h3>🌸 פרטים אישיים</h3>
+      <div class="field">
+        <label>שם</label>
+        <input type="text" id="fieldName" placeholder="השם שלי">
+      </div>
+      <div class="field">
+        <label>גיל</label>
+        <input type="number" id="fieldAge" placeholder="גיל" min="15" max="55">
+      </div>
+    </div>
+    <div class="form-card">
+      <h3>🩸 נתוני ההריון</h3>
+      <div class="field">
+        <label>תאריך וסת אחרון (LMP)</label>
+        <input type="date" id="fieldLMP">
+      </div>
+      <div class="field">
+        <label>האם זה הריון ראשון?</label>
+        <select id="fieldFirst">
+          <option value="yes">כן, ראשון</option>
+          <option value="no">לא, כבר ילדתי</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>כמה הריונות/לידות קודמות?</label>
+        <input type="number" id="fieldPrevPreg" placeholder="0" min="0" max="15" value="0">
+      </div>
+    </div>
+    <div class="form-card">
+      <h3>📊 מדדים כלליים</h3>
+      <div class="field">
+        <label>גובה (ס"מ)</label>
+        <input type="number" id="fieldHeight" placeholder="165" min="140" max="210">
+      </div>
+      <div class="field">
+        <label>משקל לפני הריון (ק"ג)</label>
+        <input type="number" id="fieldWeight" placeholder="65" min="30" max="200">
+      </div>
+      <div class="field">
+        <label>מחלות רקע / מצב כרוני</label>
+        <select id="fieldConditions">
+          <option value="none">אין</option>
+          <option value="diabetes">סוכרת</option>
+          <option value="hypertension">יתר לחץ דם</option>
+          <option value="thyroid">בעיות בלוטת תריס</option>
+          <option value="autoimmune">מחלה אוטואימונית</option>
+          <option value="other">אחר</option>
+        </select>
+      </div>
+      <div class="field">
+        <label>הריון בסיכון גבוה?</label>
+        <select id="fieldHighRisk">
+          <option value="no">לא</option>
+          <option value="yes">כן</option>
+          <option value="unknown">לא יודעת</option>
+        </select>
+      </div>
+    </div>
+    <button class="save-btn" onclick="saveProfile()">💾 שמור ועדכן מעקב</button>
+    <div style="height:16px"></div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeModal(event)">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <button class="close-modal" onclick="closeModal()">✕</button>
+    <div id="modalContent"></div>
+  </div>
+</div>
+
+<script>
+// ============ STATE ============
+let profile = JSON.parse(localStorage.getItem('pregnancyProfile') || '{}');
+let checkedItems = JSON.parse(localStorage.getItem('checkedItems') || '{}');
+let chatHistory = [];
+
+// ============ WEEKS DATABASE ============
+const weekData = [
+  { w:4,  desc:'הביצית המופרית הושתלה ברחם. הלב מתחיל להתפתח. הריון עדיין לא נראה מבחוץ.', size:'פרג', emoji:'🌱' },
+  { w:5,  desc:'הלב מתחיל לפעום! המוח, עמוד השדרה והלב מתחילים להתצר.', size:'שומשום', emoji:'💚' },
+  { w:6,  desc:'ניתן לשמוע פעימות לב בסונאר. גפיים קטנות מתחילות להופיע.', size:'עדשה', emoji:'🫀' },
+  { w:7,  desc:'העוברון גדל מהר. עיניים, אוזניים ואף מתחילים להיווצר.', size:'שעועית', emoji:'🟢' },
+  { w:8,  desc:'כל האיברים הפנימיים הושלמו. אצבעות ידיים ורגליים נפרדות.', size:'פטל', emoji:'🫐' },
+  { w:9,  desc:'העוברון הפך לעובר! שיניים ראשוניות מתפתחות. תנועה ראשונה.', size:'אוכמנייה', emoji:'🫐' },
+  { w:10, desc:'כל האיברים הגיעו למקומם. הראש גדול יחסית.', size:'תות גדול', emoji:'🍓' },
+  { w:11, desc:'האצבעות נפרדות לחלוטין. הכבד מייצר תאי דם.', size:'תאנה', emoji:'🫐' },
+  { w:12, desc:'העובר מוכן לשליש השני. ניתן לשמוע פעימות לב בדופלר.', size:'ליים', emoji:'🍋' },
+  { w:13, desc:'תחילת השליש השני! הפנים מפותחות. כליות מייצרות שתן.', size:'פלפל', emoji:'🫑' },
+  { w:14, desc:'מערכת הלב מתקדמת. שרירי הפנים מאפשרים הבעות.', size:'לימון', emoji:'🍋' },
+  { w:15, desc:'שיניים מתגבשות מתחת לחניכיים. הגוף מכוסה בשיער עדין.', size:'תפוח', emoji:'🍎' },
+  { w:16, desc:'העובר שומע קולות. ניתן לגלות מין. פנים בשלות.', size:'אבוקדו', emoji:'🥑' },
+  { w:17, desc:'שכבת שומן מגינה על העור. שרירים מתפתחים.', size:'בטטה', emoji:'🍠' },
+  { w:18, desc:'קפיצת גדילה! ניתן לחוש תנועות ראשונות ("פרפרים").', size:'פלפל אדום', emoji:'🫑' },
+  { w:19, desc:'קווי טביעת האצבע מתגבשים. ציפורניים גדלות.', size:'עגבנייה', emoji:'🍅' },
+  { w:20, desc:'אמצע ההריון! אולטרסאונד מורפולוגי - בדיקה חשובה מאוד.', size:'בננה', emoji:'🍌' },
+  { w:21, desc:'עובר פעיל מאוד. שינה בקצב. שמיעה מפותחת.', size:'גזר', emoji:'🥕' },
+  { w:22, desc:'ריאות מתפתחות. תגובה לאור ולקול.', size:'תירס', emoji:'🌽' },
+  { w:23, desc:'שמיעה מלאה. ניתן לשמוע את קולך!', size:'מנגו', emoji:'🥭' },
+  { w:24, desc:'גבול היתכנות חיים! ריאות מייצרות סרפקטנט.', size:'תירס גדול', emoji:'🌽' },
+  { w:25, desc:'עור מתייצב. פנים ממש נראים כמו תינוק.', size:'לפת', emoji:'🌱' },
+  { w:26, desc:'ניתן לפקוח עיניים! גבות וריסים מפותחים.', size:'קישוא', emoji:'🥒' },
+  { w:27, desc:'תחילת השליש השלישי! מוח מתפתח מהר.', size:'כרובית', emoji:'🥦' },
+  { w:28, desc:'שליש שלישי! ניתן לחוש תנועות קבועות. בדיקת סוכר חשובה.', size:'חציל', emoji:'🍆' },
+  { w:29, desc:'מוח ממשיך לגדול. עצמות מתחזקות.', size:'דלורית', emoji:'🎃' },
+  { w:30, desc:'ראש כנראה כלפי מטה. כ-3 ק"ג עד הלידה.', size:'כרוב', emoji:'🥬' },
+  { w:31, desc:'ריאות כמעט בשלות. בידול שינה/ערות.', size:'קוקוס', emoji:'🥥' },
+  { w:32, desc:'עצמות מתקשות. 8 שבועות לסיום!', size:'קולורבי', emoji:'🥦' },
+  { w:33, desc:'תינוק שומע מוזיקה ומזהה קול אמא.', size:'אננס', emoji:'🍍' },
+  { w:34, desc:'ריאות בשלות לגמרי בעצם. ציפורניים ארוכות.', size:'בטא', emoji:'🫐' },
+  { w:35, desc:'גוף מכוסה שומן. שיניים מוכנות.', size:'קוסקוס', emoji:'🌾' },
+  { w:36, desc:'כמעט מוכן ללידה! ראש יורד לאגן.', size:'רוכסן', emoji:'🥬' },
+  { w:37, desc:'הריון בשל מוקדם! לידה בטוחה.', size:'חסה', emoji:'🥬' },
+  { w:38, desc:'הריון בשל! כל הכנות ללידה.', size:'לופה', emoji:'🫐' },
+  { w:39, desc:'בשל לחלוטין. ממתינים לסימנים.', size:'ירקות', emoji:'🥬' },
+  { w:40, desc:'תאריך יעד! תינוק מוכן לעולם! 🎉', size:'אבטיח קטן', emoji:'🍉' },
+];
+
+const checksDB = [
+  { id:'c1',  weeks:[4,6],   title:'בדיקת דם ראשונה', sub:'אישור הריון, TSH, CBC, סוכר, הפטיטיס, אדמת', icon:'🩸', urgent:true,
+    detail:'בדיקת הדם הראשונה כוללת ספירת דם, סוכר, בלוטת תריס (TSH), נוגדני אדמת (Rubella), B12, ברזל, Rh factor, הפטיטיס B ו-C, HIV ועגבת.' },
+  { id:'c2',  weeks:[8,10],  title:'סונאר ראשון', sub:'אישור הריון, כמות עוברים, דופק', icon:'🔊', urgent:true,
+    detail:'סונאר נרתיקי לאישור הריון תקין, קביעת גיל ותאריך יעד, בדיקת דופק עובר ואישור שהריון הוא תוך-רחמי.' },
+  { id:'c3',  weeks:[11,13], title:'שקיפות עורפית + סקר ראשון', sub:'סינון תסמונת דאון', icon:'🧬', urgent:true,
+    detail:'בדיקה משולבת: אולטרסאונד למדידת שקיפות עורפית + בדיקת דם לסמנים. הסינון הטובה לתסמונות כרומוזומיות בשליש הראשון. ממולץ ע"י וועדות גנטיקה בינלאומיות.' },
+  { id:'c4',  weeks:[16,18], title:'סקר שני - בדיקת דם', sub:'AFP, HCG, estriol, inhibin A', icon:'🩸',
+    detail:'בדיקת סינון לתסמונות כרומוזומיות ופגמים בצינור העצבי. מבוססת על 4 סמנים בדם. ממולצת לכל הנשים.' },
+  { id:'c5',  weeks:[18,22], title:'אולטרסאונד מורפולוגי', sub:'בדיקת מבנה איברים מלאה', icon:'🔊', urgent:true,
+    detail:'הבדיקה החשובה ביותר בהריון. בדיקה מקיפה של מבנה לב, מוח, כליות, עמוד שדרה ושאר איברים. גם ניתן לראות את מין התינוק.' },
+  { id:'c6',  weeks:[24,28], title:'העמסת סוכר (GTT)', sub:'אבחון סוכרת הריון', icon:'🍬', urgent:true,
+    detail:'בדיקת דם לאחר שתיית תמיסת גלוקוז. ממולצת לכל הנשים. חשובה מאוד לאבחון סוכרת הריון שעלולה לגרום לסיבוכים.' },
+  { id:'c7',  weeks:[26,28], title:'חיסון שעלת (dTap)', sub:'הגנה על התינוק מלידה', icon:'💉',
+    detail:'חיסון ממולץ בשליש השלישי. האם מעבירה נוגדנים לעובר ומגינה עליו בשבועות הראשונים לחיים לפני שיוכל להתחסן.' },
+  { id:'c8',  weeks:[28,32], title:'סונאר שלישי - גדילה', sub:'משקל, נוזל מי שפיר, מיקום שליה', icon:'🔊',
+    detail:'בדיקת גדילה ומעקב. בודקת משקל עובר, מיקום שליה, כמות מי שפיר ומיקום העובר. חשובה לאיתור בעיות גדילה.' },
+  { id:'c9',  weeks:[35,37], title:'תרבית GBS (סטרפטוקוק B)', sub:'מניעת זיהום בלידה', icon:'🔬',
+    detail:'נטילת תרבית מהנרתיק לאיתור חיידק GBS. אם חיובי - מקבלת אנטיביוטיקה בלידה. ממולץ ע"י כל הוועדות המיילדותיות.' },
+  { id:'c10', weeks:[36,40], title:'ביקורי מעקב שבועיים', sub:'לחץ דם, שתן, גדילה, מיקום', icon:'👩‍⚕️',
+    detail:'בשלב הסיום, מבקרים את הרופאה/מיילדת כל שבוע. בודקים לחץ דם, שתן, גדילת בטן, מיקום ראש, ותחושות האם.' },
+];
+
+const nutritionEat = [
+  { emoji:'🥦', title:'ירקות ירוקים', desc:'פולאט, ברזל, סיבים. גרגר נחלים, ברוקולי, תרד.' },
+  { emoji:'🥚', title:'ביצים', desc:'חלבון מלא, כולין לפיתוח מוח. 2-3 ביצים ביום.' },
+  { emoji:'🐟', title:'דגים שמנים', desc:'אומגה-3 לפיתוח מוח. סלמון, סרדינים - עד 2 פעמים שבוע.' },
+  { emoji:'🫘', title:'קטניות', desc:'חלבון, ברזל, פולאט. עדשות, גרגרי חומוס, שעועית.' },
+  { emoji:'🥛', title:'מוצרי חלב', desc:'סידן לעצמות. גבינות קשות, יוגורט, חלב.' },
+  { emoji:'🍊', title:'פירות הדר', desc:'ויטמין C לספיגת ברזל. תפוז, גרפרוט, מנדרינה.' },
+  { emoji:'🥜', title:'אגוזים', desc:'אומגה-3, מגנזיום, ויטמין E. אגוזי מלך, שקדים.' },
+  { emoji:'🌾', title:'דגנים מלאים', desc:'אנרגיה מתמשכת, סיבים. לחם מלא, קוויקר, שיבולת שועל.' },
+];
+
+const nutritionAvoid = [
+  { emoji:'🍣', title:'סושי עם דג נא', desc:'סיכון לטפילים ובקטריות. עד לאחר הלידה.' },
+  { emoji:'🧀', title:'גבינות רכות לא מפוסטרות', desc:'סיכון לליסטריה. הימנעי מברי, קממבר.' },
+  { emoji:'🍷', title:'אלכוהול', desc:'אסור לחלוטין בהריון. כל כמות מסוכנת.' },
+  { emoji:'☕', title:'קפאין עודף', desc:'עד 200 מ"ג ביום (כוס אחת). הורדת זרימת דם לשליה.' },
+  { emoji:'🥩', title:'בשר נא/לא מבושל', desc:'סיכון לטוקסופלזמה וסלמונלה.' },
+  { emoji:'🐠', title:'דגים גדולים', desc:'כספית גבוהה: טונה, חרב, כריש. הגבלה חמורה.' },
+];
+
+const supplementsDB = [
+  { icon:'💊', title:'חומצה פולית (Folic Acid)', sub:'400-800 מק"ג ליום. חיונית מתחילת ההריון ועד שבוע 12 לפחות. מניעת פגמים בצינור העצבי.', urgent:true },
+  { icon:'🫶', title:'ברזל', sub:'רמות ברזל יורדות בהריון. 30-60 מ"ג ברזל יומי אם אנמית. בדיקה בשבוע 12-16.', urgent:false },
+  { icon:'☀️', title:'ויטמין D3', sub:'ממולץ 1000-2000 יב"ל ביום. חיוני לספיגת סידן לעצמות התינוק. שכיח חסר בישראל.', urgent:false },
+  { icon:'🧠', title:'אומגה-3 DHA', sub:'ממולץ 200-300 מ"ג DHA ביום לפיתוח מוח ועיניים. ניתן מדגים שמנים או כמוסה.', urgent:false },
+  { icon:'🦴', title:'סידן', sub:'1000 מ"ג ביום. חיוני לעצמות התינוק. מגיע בעיקר מיוגורט, גבינות, שומשום.', urgent:false },
+];
+
+const activities = [
+  { icon:'🚶‍♀️', label:'הליכה' },
+  { icon:'🏊‍♀️', label:'שחייה' },
+  { icon:'🧘‍♀️', label:'יוגה' },
+  { icon:'🤸‍♀️', label:'פילאטיס' },
+  { icon:'🚴‍♀️', label:'אופני נייח' },
+  { icon:'💆‍♀️', label:'מדיטציה' },
+];
+
+const quickQuestions = [
+  'מה מותר לאכול השבוע?',
+  'כאבי גב - מה לעשות?',
+  'תנועות עובר - מה נורמלי?',
+  'מתי ללכת לחדר מיון?',
+  'בחילות בוקר - טיפים',
+  'הכנה ללידה',
+];
+
+// ============ COMPUTED ============
+function getWeeksPregnant() {
+  if (!profile.lmp) return 8; // default demo
+  const lmp = new Date(profile.lmp);
+  const now = new Date();
+  const diff = Math.floor((now - lmp) / (1000 * 60 * 60 * 24 * 7));
+  return Math.max(1, Math.min(42, diff));
+}
+
+function getDueDate() {
+  if (!profile.lmp) return null;
+  const lmp = new Date(profile.lmp);
+  lmp.setDate(lmp.getDate() + 280);
+  return lmp;
+}
+
+function getDaysLeft() {
+  const due = getDueDate();
+  if (!due) return '–';
+  const diff = Math.ceil((due - new Date()) / (1000 * 60 * 60 * 24));
+  return diff > 0 ? diff : 0;
+}
+
+function getTrimester(w) {
+  if (w <= 13) return 'ראשון 🌱';
+  if (w <= 26) return 'שני 🌸';
+  return 'שלישי 🌺';
+}
+
+function getTrimesterNum(w) {
+  if (w <= 13) return 1;
+  if (w <= 26) return 2;
+  return 3;
+}
+
+function getWeekInfo(w) {
+  return weekData.find(d => d.w === w) || weekData.find(d => d.w === Math.min(40, Math.max(4, w)));
+}
+
+function getChecksForWeek(w) {
+  return checksDB.filter(c => c.weeks[0] <= w && c.weeks[1] >= w - 2);
+}
+
+function countDoneChecks() {
+  let done = 0, total = 0;
+  const w = getWeeksPregnant();
+  checksDB.forEach(c => {
+    if (c.weeks[0] <= w) { total++; if (checkedItems[c.id]) done++; }
+  });
+  return `${done}/${total}`;
+}
+
+// ============ RENDER FUNCTIONS ============
+function renderDashboard() {
+  const w = getWeeksPregnant();
+  const info = getWeekInfo(w);
+  const pct = Math.round((w / 40) * 100);
+  const tri = getTrimesterNum(w);
+
+  document.getElementById('headerWeekBadge').textContent = `שבוע ${w}`;
+  document.getElementById('headerWeekBadge2').textContent = `שבוע ${w}`;
+  document.getElementById('statDaysLeft').textContent = getDaysLeft();
+  document.getElementById('statTrimester').textContent = tri;
+  document.getElementById('statChecks').textContent = countDoneChecks();
+
+  document.getElementById('weekHeroContainer').innerHTML = `
+    <div class="week-hero">
+      <div class="week-hero-top">
+        <div>
+          <div class="week-num">${w}</div>
+          <div class="week-label">שבוע הריון ${info ? '• ' + info.emoji + ' גודל: ' + info.size : ''}</div>
+        </div>
+        <div class="trimester-badge">שליש ${tri}</div>
+      </div>
+      <div class="week-desc">${info ? info.desc : ''}</div>
+      <div class="progress-bar-wrap">
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" style="width:${pct}%"></div>
+        </div>
+        <div class="progress-labels"><span>שבוע 40</span><span>0</span></div>
+      </div>
+    </div>
+  `;
+
+  // Tip banner
+  let tipHtml = '';
+  if (w >= 35 && w <= 37) {
+    tipHtml = `<div class="tip-banner warn"><div class="tip-icon">⚠️</div><div class="tip-text"><div class="tip-title">ממתינה לסימנים</div>בשלב זה יש לוודא שתיק ללידה מוכן. דעי לזהות: צירים סדירים, שבירת מים, ירידה בתנועות.</div></div>`;
+  } else if (w >= 24 && w < 28) {
+    tipHtml = `<div class="tip-banner info"><div class="tip-icon">💉</div><div class="tip-text"><div class="tip-title">בדיקת סוכר הריון</div>בשבועות 24-28 יש לעשות העמסת סוכר (GTT). זו בדיקת חובה לאבחון סוכרת הריון.</div></div>`;
+  } else if (w >= 11 && w <= 13) {
+    tipHtml = `<div class="tip-banner info"><div class="tip-icon">🧬</div><div class="tip-text"><div class="tip-title">זמן שקיפות עורפית</div>בשבועות 11-13 עושים את הסקר הראשון - שקיפות עורפית. הזמיני תור עכשיו!</div></div>`;
+  }
+  document.getElementById('dashboardTip').innerHTML = tipHtml;
+
+  // Weekly tasks
+  const tasks = getChecksForWeek(w).slice(0, 3);
+  const tasksHtml = tasks.map(c => `
+    <div class="check-card ${checkedItems[c.id] ? 'done' : 'urgent'}" onclick="toggleCheck('${c.id}'); renderDashboard()">
+      <div class="card-icon">${c.icon}</div>
+      <div class="card-body">
+        <div class="card-title">${c.title}</div>
+        <div class="card-sub">${c.sub}</div>
+        <div class="card-week">שבועות ${c.weeks[0]}–${c.weeks[1]}</div>
+      </div>
+      <div class="check-circle">${checkedItems[c.id] ? '✓' : ''}</div>
+    </div>
+  `).join('') || '<div style="padding:16px;color:var(--text-muted);text-align:center">אין משימות דחופות השבוע 🎉</div>';
+
+  document.getElementById('weeklyTasks').innerHTML = tasksHtml;
+
+  // Activity chips
+  const activeActivities = w >= 32 ? ['הליכה', 'יוגה', 'מדיטציה'] : ['הליכה', 'שחייה', 'יוגה', 'פילאטיס'];
+  document.getElementById('activityChips').innerHTML = activities.map(a => `
+    <div class="chip ${activeActivities.includes(a.label) ? 'active' : ''}">
+      <span class="chip-icon">${a.icon}</span>${a.label}
+    </div>
+  `).join('');
+}
+
+function renderChecks() {
+  const w = getWeeksPregnant();
+  const current = getChecksForWeek(w);
+
+  document.getElementById('checksCurrentWeek').innerHTML = current.map(c => `
+    <div class="check-card ${checkedItems[c.id] ? 'done' : c.urgent ? 'urgent' : ''}"
+      onclick="openCheckModal('${c.id}')">
+      <div class="card-icon">${c.icon}</div>
+      <div class="card-body">
+        <div class="card-title">${c.title}</div>
+        <div class="card-sub">${c.sub}</div>
+      </div>
+      <div class="check-circle">${checkedItems[c.id] ? '✓' : ''}</div>
+    </div>
+  `).join('') || '<div style="padding:16px;color:var(--text-muted);text-align:center">אין בדיקות ספציפיות לשבוע הנוכחי</div>';
+
+  // Timeline
+  document.getElementById('checksTimeline').innerHTML = checksDB.map((c, i) => {
+    const isPast = checkedItems[c.id];
+    const isCurrent = c.weeks[0] <= w && c.weeks[1] >= w;
+    const dotClass = isPast ? 'past' : isCurrent ? '' : 'future';
+    const isLast = i === checksDB.length - 1;
+    return `
+      <div class="timeline-item" onclick="openCheckModal('${c.id}')">
+        <div class="timeline-left">
+          <div class="timeline-dot ${dotClass}"></div>
+          ${!isLast ? '<div class="timeline-line"></div>' : ''}
+        </div>
+        <div class="timeline-content">
+          <div class="timeline-week">${c.icon} שבועות ${c.weeks[0]}–${c.weeks[1]}</div>
+          <div class="timeline-title">${c.title}</div>
+          <div class="timeline-desc">${c.sub}</div>
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function renderNutrition() {
+  document.getElementById('foodEat').innerHTML = nutritionEat.map(f => `
+    <div class="food-card eat">
+      <div class="food-emoji">${f.emoji}</div>
+      <div class="food-title">${f.title}</div>
+      <div class="food-desc">${f.desc}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('foodAvoid').innerHTML = nutritionAvoid.map(f => `
+    <div class="food-card avoid">
+      <div class="food-emoji">${f.emoji}</div>
+      <div class="food-title">${f.title}</div>
+      <div class="food-desc">${f.desc}</div>
+    </div>
+  `).join('');
+
+  document.getElementById('supplements').innerHTML = supplementsDB.map(s => `
+    <div class="check-card ${s.urgent ? 'urgent' : ''}">
+      <div class="card-icon">${s.icon}</div>
+      <div class="card-body">
+        <div class="card-title">${s.title}</div>
+        <div class="card-sub">${s.sub}</div>
+      </div>
+    </div>
+  `).join('');
+}
+
+function renderQuickQuestions() {
+  document.getElementById('quickQuestions').innerHTML = quickQuestions.map(q => `
+    <button class="quick-q" onclick="askQuestion('${q}')">${q}</button>
+  `).join('');
+}
+
+function renderProfile() {
+  if (profile.name) document.getElementById('fieldName').value = profile.name;
+  if (profile.age) document.getElementById('fieldAge').value = profile.age;
+  if (profile.lmp) document.getElementById('fieldLMP').value = profile.lmp;
+  if (profile.first !== undefined) document.getElementById('fieldFirst').value = profile.first;
+  if (profile.prevPreg !== undefined) document.getElementById('fieldPrevPreg').value = profile.prevPreg;
+  if (profile.height) document.getElementById('fieldHeight').value = profile.height;
+  if (profile.weight) document.getElementById('fieldWeight').value = profile.weight;
+  if (profile.conditions) document.getElementById('fieldConditions').value = profile.conditions;
+  if (profile.highRisk) document.getElementById('fieldHighRisk').value = profile.highRisk;
+}
+
+// ============ INTERACTIONS ============
+function showScreen(name) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('screen-' + name).classList.add('active');
+  document.querySelector(`[data-screen="${name}"]`)?.classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'checks') renderChecks();
+  if (name === 'nutrition') renderNutrition();
+  if (name === 'ai') renderQuickQuestions();
+  if (name === 'docs') renderDocs();
+  if (name === 'profile') renderProfile();
+}
+
+function toggleCheck(id) {
+  checkedItems[id] = !checkedItems[id];
+  localStorage.setItem('checkedItems', JSON.stringify(checkedItems));
+}
+
+function saveProfile() {
+  profile = {
+    name: document.getElementById('fieldName').value,
+    age: document.getElementById('fieldAge').value,
+    lmp: document.getElementById('fieldLMP').value,
+    first: document.getElementById('fieldFirst').value,
+    prevPreg: document.getElementById('fieldPrevPreg').value,
+    height: document.getElementById('fieldHeight').value,
+    weight: document.getElementById('fieldWeight').value,
+    conditions: document.getElementById('fieldConditions').value,
+    highRisk: document.getElementById('fieldHighRisk').value,
+  };
+  localStorage.setItem('pregnancyProfile', JSON.stringify(profile));
+  showScreen('dashboard');
+  const btn = document.querySelector('.save-btn');
+  btn.textContent = '✅ נשמר!';
+  setTimeout(() => btn.textContent = '💾 שמור ועדכן מעקב', 2000);
+}
+
+function openCheckModal(id) {
+  const c = checksDB.find(x => x.id === id);
+  if (!c) return;
+  document.getElementById('modalContent').innerHTML = `
+    <h3>${c.icon} ${c.title}</h3>
+    <div style="display:inline-block;background:var(--rose-light);color:var(--rose-dark);padding:4px 12px;border-radius:12px;font-size:13px;font-weight:600;margin-bottom:12px;">
+      שבועות ${c.weeks[0]}–${c.weeks[1]}
+    </div>
+    <p>${c.detail}</p>
+    <br>
+    <button style="width:100%;padding:14px;border:none;border-radius:14px;background:${checkedItems[id] ? '#14b8a6' : 'linear-gradient(135deg,var(--rose-dark),#6d28d9)'};color:white;font-family:Heebo,sans-serif;font-size:16px;font-weight:700;cursor:pointer;"
+      onclick="toggleCheck('${id}');renderChecks();renderDashboard();document.getElementById('modalOverlay').classList.remove('open')">
+      ${checkedItems[id] ? '✓ בוצע - בטלי סימון' : '✅ סמני כבוצע'}
+    </button>
+  `;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal(e) {
+  if (!e || e.target === document.getElementById('modalOverlay')) {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+// ============ AI CHAT ============
+function buildSystemPrompt() {
+  const w = getWeeksPregnant();
+  const tri = getTrimester(w);
+  const age = profile.age || 'לא ידוע';
+  const conditions = profile.conditions || 'none';
+  const highRisk = profile.highRisk || 'no';
+  const bmi = profile.height && profile.weight
+    ? (profile.weight / Math.pow(profile.height / 100, 2)).toFixed(1) : 'לא ידוע';
+
+  return `אתה יועצת הריון מקצועית ואמפתית בשפה העברית. המשתמשת שלך:
+- גיל: ${age}
+- שבוע הריון: ${w} (${tri})  
+- BMI לפני הריון: ${bmi}
+- מחלות רקע: ${conditions}
+- הריון בסיכון גבוה: ${highRisk}
+- מספר הריונות קודמים: ${profile.prevPreg || 0}
+
+ענה בעברית, בצורה ידידותית, חמה ומדויקת. תמיד:
+1. ספק מידע מבוסס ראיות מוועדות כמו ACOG, WHO, SMFM
+2. ציין אם מצב מחייב פנייה לרופאה
+3. התחשב בנתוני האישה (גיל, שבוע, מצב בריאותי)
+4. אל תחליף ייעוץ רפואי אישי
+תשובות קצרות וברורות, עם רווחים ופסקאות. השתמש באמוג'ים בצנינות.`;
+}
+
+async function sendMessage(text) {
+  const input = document.getElementById('chatInput');
+  const msg = text || input.value.trim();
+  if (!msg) return;
+
+  input.value = '';
+  input.style.height = 'auto';
+
+  addChatMsg('user', msg);
+  chatHistory.push({ role: 'user', content: msg });
+
+  const sendBtn = document.getElementById('sendBtn');
+  sendBtn.innerHTML = '<div class="spinner"></div>';
+  sendBtn.disabled = true;
+
+  const typingId = addChatMsg('ai', '<div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div>', true);
+
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: buildSystemPrompt(),
+        messages: chatHistory,
+      })
+    });
+    const data = await response.json();
+    const reply = data.content?.[0]?.text || 'מצטערת, לא הצלחתי לענות. נסי שוב.';
+
+    document.getElementById(typingId)?.remove();
+    addChatMsg('ai', reply);
+    chatHistory.push({ role: 'assistant', content: reply });
+  } catch (err) {
+    document.getElementById(typingId)?.remove();
+    addChatMsg('ai', '⚠️ שגיאת חיבור. בדקי את החיבור לאינטרנט ונסי שוב.');
+  }
+
+  sendBtn.innerHTML = '➤';
+  sendBtn.disabled = false;
+}
+
+function addChatMsg(role, text, isTemp = false) {
+  const id = 'msg-' + Date.now();
+  const div = document.createElement('div');
+  div.className = `msg ${role}`;
+  div.id = id;
+  const time = new Date().toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });
+  div.innerHTML = `
+    <div class="msg-bubble">${text}</div>
+    ${!isTemp ? `<div class="msg-meta">${time}</div>` : ''}
+  `;
+  document.getElementById('chatMessages').appendChild(div);
+  div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  return id;
+}
+
+function askQuestion(q) {
+  sendMessage(q);
+}
+
+// ============ INIT ============
+window.addEventListener('load', () => {
+  setTimeout(() => {
+    document.getElementById('splash').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('splash').style.display = 'none';
+
+      // If no profile, nudge
+      if (!profile.lmp) {
+        // Add welcome AI message
+      }
+
+      renderDashboard();
+
+      // Welcome AI message
+      setTimeout(() => {
+        if (document.getElementById('chatMessages').children.length === 0) {
+          const w = getWeeksPregnant();
+          addChatMsg('ai', `שלום ${profile.name || ''}! 🌸 אני יועצת ה-AI שלך לאורך כל ההריון.
+
+אני כאן לענות על כל שאלה - תסמינים, תזונה, בדיקות, פעילות גופנית ועוד.
+
+את בשבוע **${w}** - מה תרצי לדעת היום?`);
+        }
+      }, 500);
+    }, 500);
+  }, 1800);
+});
+
+
+// ============ DOCS MODULE ============
+let docs = JSON.parse(localStorage.getItem('pregnancyDocs') || '[]');
+let currentFileData = null; // { base64, mimeType, previewUrl }
+let uploadModalOpen = false;
+
+const docTypeConfig = {
+  blood:       { label: 'בדיקת דם',         emoji: '🩸', color: '#fee2e2', textColor: '#991b1b' },
+  ultrasound:  { label: 'אולטרסאונד',       emoji: '🔊', color: '#dbeafe', textColor: '#1e40af' },
+  glucose:     { label: 'העמסת סוכר',       emoji: '🍬', color: '#fef3c7', textColor: '#92400e' },
+  amnio:       { label: 'בדיקה גנטית',      emoji: '🧬', color: '#ede9fe', textColor: '#5b21b6' },
+  urine:       { label: 'בדיקת שתן',        emoji: '💧', color: '#cffafe', textColor: '#164e63' },
+  bp:          { label: 'לחץ דם',           emoji: '💊', color: '#dcfce7', textColor: '#14532d' },
+  prescription:{ label: 'מרשם תרופות',     emoji: '💉', color: '#fce7f3', textColor: '#831843' },
+  summary:     { label: 'סיכום רופא',       emoji: '📝', color: '#f1f5f9', textColor: '#334155' },
+  other:       { label: 'מסמך',             emoji: '📋', color: '#f9fafb', textColor: '#374151' },
+};
+
+function saveDocs() {
+  // Save docs without the full base64 preview to avoid quota issues
+  const toSave = docs.map(d => ({ ...d, previewUrl: null }));
+  try { localStorage.setItem('pregnancyDocs', JSON.stringify(toSave)); } catch(e) {}
+}
+
+function renderDocs() {
+  const list = document.getElementById('docsList');
+  if (!docs.length) {
+    list.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-muted);">
+      <div style="font-size:48px;margin-bottom:10px;">📂</div>
+      <div style="font-weight:600;">אין מסמכים עדיין</div>
+      <div style="font-size:13px;margin-top:4px;">לחצי על "הוסף" כדי להעלות את הבדיקה הראשונה</div>
+    </div>`;
+    return;
+  }
+
+  list.innerHTML = docs.slice().reverse().map(doc => {
+    const cfg = docTypeConfig[doc.type] || docTypeConfig.other;
+    const previewText = doc.analysis ? doc.analysis.substring(0, 120) + '...' : 'טוען ניתוח...';
+    return `
+    <div class="doc-card" onclick="openDocDetail('${doc.id}')">
+      <div class="doc-card-header">
+        <div class="doc-type-badge" style="background:${cfg.color};">${cfg.emoji}</div>
+        <div class="doc-card-body">
+          <div class="doc-card-title">${cfg.label}</div>
+          <div class="doc-card-date">📅 ${formatDate(doc.date)} • שבוע ${doc.week}</div>
+          ${doc.note ? `<div class="doc-card-note">${doc.note}</div>` : ''}
+          <span class="doc-card-status ${doc.analysis ? 'analyzed' : 'pending'}">
+            ${doc.analysis ? '✓ פוענח' : '⏳ ממתין'}
+          </span>
+        </div>
+      </div>
+      ${doc.analysis ? `<div class="doc-preview">${doc.analysis}</div>` : ''}
+      <div class="doc-actions">
+        <button class="doc-action-btn" onclick="event.stopPropagation();openDocDetail('${doc.id}')">🔍 פרטים מלאים</button>
+        <button class="doc-action-btn" onclick="event.stopPropagation();askAboutDoc('${doc.id}')">💬 שאלי AI</button>
+        <button class="doc-action-btn danger" onclick="event.stopPropagation();deleteDoc('${doc.id}')">🗑️</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function formatDate(dateStr) {
+  if (!dateStr) return 'לא ידוע';
+  const d = new Date(dateStr);
+  return d.toLocaleDateString('he-IL');
+}
+
+// ---- Upload flow ----
+function openUploadModal() {
+  document.getElementById('uploadModalOverlay').classList.add('open');
+  document.getElementById('uploadStep1').style.display = 'block';
+  document.getElementById('uploadStep2').style.display = 'none';
+  document.getElementById('analyzeButtonWrap').style.display = 'none';
+  document.getElementById('filePreviewWrap').style.display = 'none';
+  document.getElementById('docDate').value = new Date().toISOString().split('T')[0];
+  currentFileData = null;
+  uploadModalOpen = true;
+}
+
+function closeUploadModal(e) {
+  if (!e || e.target === document.getElementById('uploadModalOverlay')) {
+    document.getElementById('uploadModalOverlay').classList.remove('open');
+    uploadModalOpen = false;
+    currentFileData = null;
+  }
+}
+
+function handleFileDrop(e) {
+  e.preventDefault();
+  document.getElementById('fileDropZone').style.background = 'var(--rose-pale)';
+  const file = e.dataTransfer.files[0];
+  if (file) processFile(file);
+}
+
+function handleFileSelect(e) {
+  const file = e.target.files[0];
+  if (file) processFile(file);
+}
+
+function processFile(file) {
+  const allowed = ['image/jpeg','image/png','image/webp','image/heic','application/pdf'];
+  if (!allowed.includes(file.type) && !file.type.startsWith('image/')) {
+    alert('יש להעלות תמונה או PDF בלבד'); return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const base64Full = e.target.result; // data:mime;base64,xxxx
+    const base64 = base64Full.split(',')[1];
+    const mimeType = file.type || 'image/jpeg';
+
+    currentFileData = { base64, mimeType, previewUrl: base64Full };
+
+    // Show preview
+    const wrap = document.getElementById('filePreviewWrap');
+    wrap.style.display = 'block';
+    if (mimeType.startsWith('image/')) {
+      wrap.innerHTML = `<img src="${base64Full}" style="max-width:100%;max-height:200px;border-radius:12px;object-fit:cover;">
+        <div style="font-size:12px;color:var(--teal);margin-top:6px;font-weight:600;">✓ קובץ נטען בהצלחה</div>`;
+    } else {
+      wrap.innerHTML = `<div style="background:var(--rose-light);padding:14px;border-radius:12px;display:flex;align-items:center;gap:10px;">
+        <span style="font-size:28px;">📄</span>
+        <div><div style="font-weight:700;font-size:14px;">${file.name}</div>
+        <div style="font-size:12px;color:var(--teal);margin-top:2px;">✓ PDF נטען</div></div></div>`;
+    }
+
+    document.getElementById('analyzeButtonWrap').style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function analyzeDocument() {
+  if (!currentFileData) return;
+
+  const type = document.getElementById('docType').value;
+  const date = document.getElementById('docDate').value;
+  const note = document.getElementById('docNote').value;
+  const cfg = docTypeConfig[type] || docTypeConfig.other;
+  const w = getWeeksPregnant();
+
+  // Show analyzing step
+  document.getElementById('uploadStep1').style.display = 'none';
+  document.getElementById('analyzeButtonWrap').style.display = 'none';
+  document.getElementById('uploadStep2').style.display = 'block';
+
+  const systemPrompt = `אתה מומחה לרפואת נשים ורדיולוגיה, מנתח מסמכים רפואיים בהריון.
+המטופלת:
+- שבוע הריון: ${w}
+- גיל: ${profile.age || 'לא ידוע'}
+- מחלות רקע: ${profile.conditions || 'אין'}
+- הריון בסיכון גבוה: ${profile.highRisk || 'לא'}
+
+סוג המסמך שהועלה: ${cfg.label}
+
+עליך:
+1. לקרוא את המסמך/תמונה ולחלץ את הממצאים המרכזיים
+2. לפרש את הערכים בהקשר להריון (נורמלי/גבוה/נמוך)
+3. לתת סיכום ברור בעברית - מה תקין, מה דורש תשומת לב
+4. להמליץ על פעולה אם נדרש (לדוגמה: לפנות לרופאה)
+
+פורמט התשובה:
+📊 **ממצאים עיקריים:**
+[רשימת הממצאים שחולצו]
+
+✅ **מה תקין:**
+[מה בתחומים נורמליים]
+
+⚠️ **מה דורש תשומת לב:**
+[אם יש ערכים חריגים - ציין אותם]
+
+💡 **המלצה:**
+[המלצה קצרה - לפנות לרופאה / מעקב בלבד / הכל תקין]
+
+⚠️ תמיד ציין: פענוח זה הוא עזר בלבד ואינו מחליף ייעוץ רופא.`;
+
+  const userContent = [];
+
+  if (currentFileData.mimeType.startsWith('image/')) {
+    userContent.push({ type: 'image', source: { type: 'base64', media_type: currentFileData.mimeType, data: currentFileData.base64 } });
+    userContent.push({ type: 'text', text: `אנא פענח את ${cfg.label} הזה ומצא את כל הממצאים הרלוונטיים להריון.` });
+  } else {
+    // PDF
+    userContent.push({ type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: currentFileData.base64 } });
+    userContent.push({ type: 'text', text: `אנא פענח את ${cfg.label} הזה ומצא את כל הממצאים הרלוונטיים להריון.` });
+  }
+
+  let analysis = '';
+  try {
+    const response = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userContent }],
+      })
+    });
+    const data = await response.json();
+    analysis = data.content?.[0]?.text || 'לא הצלחתי לפענח את המסמך. נסי שוב.';
+  } catch (err) {
+    analysis = '⚠️ שגיאת חיבור בעת ניתוח המסמך. בדקי את החיבור לאינטרנט ונסי שוב.';
+  }
+
+  // Save doc
+  const docId = 'doc-' + Date.now();
+  const newDoc = {
+    id: docId,
+    type, date, note, week: w,
+    analysis,
+    previewUrl: currentFileData.mimeType.startsWith('image/') ? currentFileData.previewUrl : null,
+    mimeType: currentFileData.mimeType,
+    createdAt: new Date().toISOString(),
+  };
+  docs.push(newDoc);
+  saveDocs();
+
+  document.getElementById('uploadModalOverlay').classList.remove('open');
+  uploadModalOpen = false;
+  currentFileData = null;
+
+  renderDocs();
+  openDocDetail(docId);
+}
+
+// ---- Doc detail ----
+function openDocDetail(id) {
+  const doc = docs.find(d => d.id === id);
+  if (!doc) return;
+  const cfg = docTypeConfig[doc.type] || docTypeConfig.other;
+
+  const analysisHtml = doc.analysis
+    ? formatAnalysisHtml(doc.analysis)
+    : '<div style="text-align:center;padding:20px;color:var(--text-muted);">⏳ לא נותח עדיין</div>';
+
+  document.getElementById('docDetailContent').innerHTML = `
+    <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div style="width:50px;height:50px;border-radius:14px;background:${cfg.color};display:flex;align-items:center;justify-content:center;font-size:26px;">${cfg.emoji}</div>
+      <div>
+        <div style="font-size:19px;font-weight:800;">${cfg.label}</div>
+        <div style="font-size:13px;color:var(--text-muted);">📅 ${formatDate(doc.date)} • שבוע ${doc.week}</div>
+      </div>
+    </div>
+
+    ${doc.previewUrl ? `<img src="${doc.previewUrl}" class="img-thumb">` : ''}
+    ${doc.note ? `<div style="background:var(--gold-light);border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px;">📝 ${doc.note}</div>` : ''}
+
+    <div style="background:white;border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:var(--shadow);">
+      <div style="font-size:14px;font-weight:700;margin-bottom:10px;color:var(--rose-dark);">🤖 ניתוח AI</div>
+      ${analysisHtml}
+    </div>
+
+    <button class="ask-about-doc-btn" onclick="askAboutDoc('${id}');closeDocDetail();">
+      💬 שאלי שאלה על בדיקה זו
+    </button>
+  `;
+  document.getElementById('docDetailOverlay').classList.add('open');
+}
+
+function formatAnalysisHtml(text) {
+  // Convert markdown-ish to nice HTML
+  return text
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/📊 \*\*ממצאים עיקריים:\*\*/g, '<div class="result-section-title" style="margin-top:4px;">📊 ממצאים עיקריים</div>')
+    .replace(/✅ \*\*מה תקין:\*\*/g, '<div class="result-section-title" style="margin-top:12px;color:var(--teal);">✅ מה תקין</div>')
+    .replace(/⚠️ \*\*מה דורש תשומת לב:\*\*/g, '<div class="result-section-title" style="margin-top:12px;color:#d97706;">⚠️ מה דורש תשומת לב</div>')
+    .replace(/💡 \*\*המלצה:\*\*/g, '<div class="result-section-title" style="margin-top:12px;color:var(--lavender);">💡 המלצה</div>')
+    .split('\n').map(line => line.trim() ? `<p style="font-size:13px;line-height:1.7;margin-bottom:4px;">${line}</p>` : '').join('');
+}
+
+function closeDocDetail(e) {
+  if (!e || e.target === document.getElementById('docDetailOverlay')) {
+    document.getElementById('docDetailOverlay').classList.remove('open');
+  }
+}
+
+function deleteDoc(id) {
+  if (!confirm('למחוק מסמך זה?')) return;
+  docs = docs.filter(d => d.id !== id);
+  saveDocs();
+  renderDocs();
+}
+
+function askAboutDoc(id) {
+  const doc = docs.find(d => d.id === id);
+  if (!doc) return;
+  const cfg = docTypeConfig[doc.type] || docTypeConfig.other;
+  showScreen('ai');
+  const q = `יש לי ${cfg.label} מ-${formatDate(doc.date)} (שבוע ${doc.week}). הממצאים: ${doc.analysis?.substring(0,300) || 'לא ידוע'}. מה המשמעות?`;
+  setTimeout(() => {
+    document.getElementById('chatInput').value = q;
+    document.getElementById('chatInput').focus();
+  }, 200);
+}
+
+document.getElementById('chatInput').addEventListener('input', function() {
+  this.style.height = 'auto';
+  this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+});
+
+// ============ PWA: SERVICE WORKER ============
+// Note: SW only works when served over HTTPS from a real domain.
+// Skip registration when running as a local file or on iOS with non-app-bound domain.
+if ('serviceWorker' in navigator && location.protocol === 'https:') {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+      .then(reg => console.log('SW registered:', reg.scope))
+      .catch(() => {}); // silently ignore - app still works fully without SW
+  });
+}
+
+// ============ PWA: INSTALL BANNER ============
+let deferredPrompt = null;
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  setTimeout(showInstallBanner, 4000);
+});
+
+function showInstallBanner() {
+  if (!deferredPrompt) return;
+  if (localStorage.getItem('pwaInstallDismissed')) return;
+  if (document.getElementById('installBanner')) return;
+
+  const banner = document.createElement('div');
+  banner.id = 'installBanner';
+  banner.innerHTML = `
+    <style>
+      #installBanner {
+        position:fixed;top:0;left:0;right:0;z-index:9999;
+        background:linear-gradient(135deg,#be185d,#6d28d9);
+        color:white;
+        padding:14px 16px;
+        padding-top:calc(14px + env(safe-area-inset-top,0px));
+        display:flex;align-items:center;gap:10px;
+        font-family:'Heebo',sans-serif;font-size:14px;
+        animation:installSlideDown 0.35s ease;
+        box-shadow:0 4px 20px rgba(190,24,93,0.4);
+      }
+      @keyframes installSlideDown {
+        from { transform: translateY(-100%); }
+        to   { transform: translateY(0); }
+      }
+    </style>
+    <span style="font-size:26px;flex-shrink:0">🤰</span>
+    <div style="flex:1;min-width:0">
+      <div style="font-weight:700;font-size:15px">התקיני את האפליקציה</div>
+      <div style="font-size:12px;opacity:0.85;margin-top:1px">גישה מהירה מהמסך הראשי</div>
+    </div>
+    <button onclick="doInstallPWA()" style="
+      background:white;color:#be185d;border:none;border-radius:10px;
+      padding:8px 14px;font-family:'Heebo',sans-serif;font-weight:700;
+      font-size:13px;cursor:pointer;white-space:nowrap;flex-shrink:0;">
+      התקיני ▸
+    </button>
+    <button onclick="dismissInstallBanner()" style="
+      background:rgba(255,255,255,0.2);border:none;width:32px;height:32px;
+      border-radius:50%;color:white;font-size:18px;cursor:pointer;
+      display:flex;align-items:center;justify-content:center;flex-shrink:0;
+      font-family:monospace;line-height:1;">×</button>
+  `;
+  document.body.prepend(banner);
+}
+
+function doInstallPWA() {
+  if (!deferredPrompt) return;
+  deferredPrompt.prompt();
+  deferredPrompt.userChoice.then((choice) => {
+    deferredPrompt = null;
+    dismissInstallBanner();
+  });
+}
+
+function dismissInstallBanner() {
+  document.getElementById('installBanner')?.remove();
+  localStorage.setItem('pwaInstallDismissed', '1');
+}
+
+window.addEventListener('appinstalled', () => {
+  document.getElementById('installBanner')?.remove();
+  deferredPrompt = null;
+  localStorage.setItem('pwaInstallDismissed', '1');
+});
+
+// ============ HASH ROUTING (for PWA shortcuts) ============
+function handleHash() {
+  const hash = (window.location.hash || '').replace('#', '');
+  const valid = ['dashboard','checks','nutrition','ai','docs','profile'];
+  if (valid.includes(hash)) showScreen(hash);
+}
+window.addEventListener('hashchange', handleHash);
+// Check on load (after app init) 
+setTimeout(handleHash, 2200);
+
+// ============ PREVENT PULL-TO-REFRESH IN STANDALONE ============
+if (window.matchMedia('(display-mode: standalone)').matches) {
+  document.body.style.overscrollBehavior = 'none';
+}
+</script>
+</body>
+</html>
